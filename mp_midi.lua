@@ -47,6 +47,15 @@ clk_midi.event = function(data) clk:process_midi(data) end
 
 local notes_off_metro = metro.init()
 
+local intervals = {1, 16/15, 9/8, 6/5, 5/4, 4/3, 45/32, 3/2, 8/5, 5/3, 9/5, 15/8}
+local base = 32
+local function getHzJust(note)
+  ratio = intervals[(note % 12) + 1]
+  oct = math.floor(note / 12) + 1
+  return(base * 2^oct * ratio)
+end
+
+
 local function all_notes_off()
   if (params:get("output") == 2 or params:get("output") == 3) then
     for _,a in pairs(active_notes) do
@@ -60,9 +69,10 @@ local function step()
 	all_notes_off()
 
 	mp:clock()
-	
+
 	for _,n in pairs(notes) do
-		local f = MusicUtil.note_num_to_freq(n)
+		-- local f = MusicUtil.note_num_to_freq(n)
+    local f = getHzJust(n)
 		if (params:get("output") == 1 or params:get("output") == 3) then
 			engine.hz(f)
 		end
@@ -87,15 +97,15 @@ local function reset_pattern()
 	clk:reset()
 end
 
-local grid_clk 
+local grid_clk
 
-local screen_clk 
+local screen_clk
 
 function init()
 	-- meadowphysics
-	mp = MeadowPhysics.loadornew(data_dir .. "mp.data") 
-	mp.mp_event = event 
-	
+	mp = MeadowPhysics.loadornew(data_dir .. "mp.data")
+	mp.mp_event = event
+
 	-- gridscales
 	gridscales = GridScales.loadornew(data_dir .. "gridscales.data")
 	gridscales:add_params()
@@ -112,7 +122,7 @@ function init()
 	params:set("bpm", 120)
 
 	notes_off_metro.event = all_notes_off
-	
+
 	params:add {
 		type = "option",
 		id = "output",
@@ -139,7 +149,7 @@ function init()
 			midi_out_channel = value
 		end
 	}
-	
+
 	params:add_separator()
 
 	params:add {
@@ -165,14 +175,14 @@ function init()
 
 	-- metro
 	grid_clk = metro.init()
-	grid_clk.event = gridredraw 
+	grid_clk.event = gridredraw
 	grid_clk.time = 1 / 30
 
 	screen_clk = metro.init()
 	screen_clk.event = function() redraw() end
 	screen_clk.time = 1 / 15
 
-	-- engine 
+	-- engine
   params:add {
 		type = "control",
 		id = "amp",
@@ -321,7 +331,7 @@ function key(n, z)
 	if n == 1 and z == 1 then
 		gridscales:set_scale(8)
 	end
-	if n == 2 and z == 1 then 
+	if n == 2 and z == 1 then
 		shift = shift ~ 1
 	elseif n == 3 and z == 1 then
 		if shift == 1 then
